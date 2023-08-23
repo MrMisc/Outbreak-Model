@@ -43,7 +43,7 @@ pub fn normal(mean: f64, std: f64, upper:f64) -> f64 {
 #[derive(Clone)]
 pub struct host{
     infected:bool,
-    motile:bool,
+    motile:u8,
     zone:usize, //Possible zones denoted by ordinal number sequence
     prob1:f64,  //Probability of contracting disease - these are tied to zone if you create using .new() implementation within methods
     prob2:f64,  //standard deviation if required OR second probabiity value for transferring in case that is different from prob1
@@ -61,8 +61,8 @@ const STD_MOVE:f64 = 10.0;
 
 const TRANSFER_DISTANCE: f64 = 1.0;//maximumm distance over which hosts can trasmit diseases to one another
 
-const AGE_OF_HOSTCOLLECTION: f64 = 60.0*24.0;  //For instance if you were collecting chickens every 60 days
-const AGE_OF_DEPOSITCOLLECTION:f64 = 3.0*24.0; //If you were collecting their eggs every 3 days
+const AGE_OF_HOSTCOLLECTION: f64 = 45.0*24.0;  //For instance if you were collecting chickens every 60 days
+const AGE_OF_DEPOSITCOLLECTION:f64 = 1.0*24.0; //If you were collecting their eggs every 3 days
 
 const STEP:usize = 20;  //Number of chickens per unit distance
 
@@ -77,13 +77,13 @@ impl host{
     fn new(zone:usize, std:f64,loc_x:f64, loc_y:f64)->host{
         let prob:f64 = LISTOFPROBABILITIES[zone.clone()];
         //Add a random age generator
-        host{infected:false,motile:true,zone:zone,prob1:prob,prob2:std,x:loc_x,y:loc_y,age:normal(5.0*24.0,3.0*24.0,11.0*24.0)}
+        host{infected:false,motile:0,zone:zone,prob1:prob,prob2:std,x:loc_x,y:loc_y,age:normal(5.0*24.0,3.0*24.0,11.0*24.0)}
     }
     fn new_inf(zone:usize, std:f64,loc_x:f64, loc_y:f64)->host{
         let prob:f64 = LISTOFPROBABILITIES[zone.clone()];
-        host{infected:true,motile:true,zone:zone,prob1:prob,prob2:std,x:loc_x,y:loc_y,age:normal(5.0*24.0,3.0*24.0,11.0*24.0)}
+        host{infected:true,motile:0,zone:zone,prob1:prob,prob2:std,x:loc_x,y:loc_y,age:normal(5.0*24.0,3.0*24.0,11.0*24.0)}
     }
-    fn deposit(self)->host{ //Direct way to lay deposit from host. The function is 100% deterministic and layering a probability clause before this is typically expected
+    fn deposit(self, consumable: bool)->host{ //Direct way to lay deposit from host. The function is 100% deterministic and layering a probability clause before this is typically expected
         let zone = self.zone.clone();
         let prob1 = self.prob1.clone();
         let prob2 = self.prob2.clone();
@@ -91,13 +91,26 @@ impl host{
         let y = self.y.clone();
         let inf = self.infected.clone();
         // println!("EGG BEING LAID");
-        host{infected:inf,motile:false,zone:zone,prob1:prob1,prob2:prob2,x:x,y:y,age:normal(1.0*24.0,1.5*24.0,2.0*24.0)}
+        if consumable{host{infected:inf,motile:1,zone:zone,prob1:prob1,prob2:prob2,x:x,y:y,age:0.0}}
+        else{host{infected:inf,motile:2,zone:zone,prob1:prob1,prob2:prob2,x:x,y:y,age:0.0}}
     }
     fn deposit_all(vector:Vec<host>)->Vec<host>{
         //Below is an example whereby hosts deposit twice a day (fecal matter and laying eggs each once per day as an example)
-        let mut vecc: Vec<host> = vector.clone(); //With this re are RETAINING the hosts and deposits within the original vector
+        let mut vecc:Vec<host> = vector.clone();
+        let mut vecc_into: Vec<host> = vector.clone().into_iter().filter(|x| x.motile==0).collect::<Vec<_>>(); //With this re are RETAINING the hosts and deposits within the original vector
+
         //.map wasn't working so we brute forced a loop
-        for ele in vector{
+        for ele in vecc_into{
+            let mut rng = thread_rng();
+            let roll = Uniform::new(0.0,1.0);
+            let rollnumber: f64 = rng.sample(roll);
+            if rollnumber<1.0/24.0{//once per 24h or 1 day rate
+                // println!("EGG BEING LAID");
+                let no:usize = normal(1.0,0.5,2.0) as usize;
+                for deposits in 0..no{
+                    vecc.push(ele.clone().deposit(true)); //consumable once per day rate
+                }
+            }
             let mut rng = thread_rng();
             let roll = Uniform::new(0.0,1.0);
             let rollnumber: f64 = rng.sample(roll);
@@ -105,14 +118,14 @@ impl host{
                 // println!("EGG BEING LAID");
                 let no:usize = normal(1.0,0.5,2.0) as usize;
                 for deposits in 0..no{
-                    vecc.push(ele.clone().deposit());
+                    vecc.push(ele.clone().deposit(false));//non consumable excrement once per day rate
                 }
             }
         }
         vecc
     }
     fn shuffle(mut self)->host{
-        if self.motile{
+        if self.motile==0{
             //Whether the movement is negative or positive
             let mut rng = thread_rng();
             let roll = Uniform::new(0.0, 1.0);
@@ -178,11 +191,11 @@ impl host{
     fn collect(inventory:Vec<host>)->[Vec<host>;2]{   //hosts and deposits potentially get collected
         let mut collection:Vec<host> = Vec::new();
         let vec1:Vec<host> = inventory.into_iter().filter_map(|mut x| {
-            if x.motile && x.age>AGE_OF_HOSTCOLLECTION{
+            if x.motile==0 && x.age>AGE_OF_HOSTCOLLECTION{
                 // println!("Collecting host(s)...{} days old",x.age/24.0);
                 collection.push(x);
                 None
-            }else if x.motile == false && x.age>AGE_OF_DEPOSITCOLLECTION{
+            }else if x.motile == 1 && x.age>AGE_OF_DEPOSITCOLLECTION{
                 // println!("Collecting deposit(s)...");
                 collection.push(x);
                 None
@@ -194,44 +207,22 @@ impl host{
     }
     fn report(inventory:&Vec<host>)->[f64;4]{ //simple function to quickly return the percentage of infected hosts
         let inf: f64 = inventory.clone().into_iter().filter(|x| {
-            x.infected && x.motile
+            x.infected && x.motile==0
         }).collect::<Vec<_>>().len() as f64;
         let noofhosts: f64 = inventory.clone().into_iter().filter(|x| {
-            x.motile
+            x.motile==0
         }).collect::<Vec<_>>().len() as f64;
 
         let inf2: f64 = inventory.clone().into_iter().filter(|x| {
-            x.infected && x.motile==false
+            x.infected && x.motile==1
         }).collect::<Vec<_>>().len() as f64;
         let noofhosts2: f64 = inventory.clone().into_iter().filter(|x| {
-            x.motile==false
+            x.motile==1
         }).collect::<Vec<_>>().len() as f64;        
 
         [inf/(noofhosts+1.0),inf2/(noofhosts2+1.0),noofhosts,noofhosts2]
     }
 }
-
-
-// fn two_chickens() {
-//     let mut chicken:host = host::new(1,0.2,2.0,2.0);
-//     let mut chicken2: host = host::new_inf(1,0.2,50.0,50.0);
-//     for j in 0..10000{
-//         println!(" Chicken is currently located at {:.2} @x and {:.2} @y", chicken.x,chicken.y);
-//         println!(" Chicken 2 is currently located at {:.2} @x and {:.2} @y", chicken2.x,chicken2.y);
-//         let CON = host::dist(&chicken,&chicken2);
-//         println!("Are chickens in contact distance? : {}", CON);
-//         if CON{
-//             println!("CONTACT CONFIRMED!");
-//             println!("Took {} minutes!",j);
-//             break;
-//         }
-//         chicken = chicken.shuffle();
-//         chicken2 = chicken2.shuffle();
-//     }
-    
-//     println!("{} is the probability tied to the selected zone for this host!", chicken.prob1);
-//     println!("Hello, world!");
-// }
 
 // fn main_(){
 //     //generate chickens 10 units apart from one another
@@ -314,16 +305,14 @@ fn main(){
         [chickens,collect] = host::collect(chickens);
         //Collect the hosts and deposits as according
         feast.append(&mut collect);
-        if chickens.len()>10{
-            let perc = host::report(&chickens)[0]*100.0;
-            let total_hosts = host::report(&chickens)[2];
-            let no = host::report(&chickens)[0]*total_hosts;
-            // println!("{}% of the chickens in the farm are infected, out of {} total - {} infected",perc,total_hosts,no);
-            let perc2 = host::report(&chickens)[1]*100.0;
-            let total_hosts2 = host::report(&chickens)[3];
-            let no2 = host::report(&chickens)[1]*total_hosts;            
-            println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);
-        }
+        let perc = host::report(&chickens)[0]*100.0;
+        let total_hosts = host::report(&chickens)[2];
+        let no = host::report(&chickens)[0]*total_hosts;
+        // println!("{}% of the chickens in the farm are infected, out of {} total - {} infected",perc,total_hosts,no);
+        let perc2 = host::report(&chickens)[1]*100.0;
+        let total_hosts2 = host::report(&chickens)[3];
+        let no2 = host::report(&chickens)[1]*total_hosts;            
+        println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);
     }
     // print("{} hours elapsed",time);
 
