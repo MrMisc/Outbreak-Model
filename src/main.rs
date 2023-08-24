@@ -187,7 +187,7 @@ impl host{
         ////
         t.powf(0.5)<=TRANSFER_DISTANCE && host1.zone == host2.zone
     }
-    fn transmit(mut inventory:Vec<host>)->Vec<host>{//Current version logic: Once the diseased host passes the "test" in fn transfer, then ALL other hosts within distance contract
+    fn transmit(mut inventory:Vec<host>,time:usize)->Vec<host>{//Current version logic: Once the diseased host passes the "test" in fn transfer, then ALL other hosts within distance contract
         //Locate all infected hosts
         let mut cloneof: Vec<host> = inventory.clone();
         cloneof = cloneof.into_iter().filter_map(|mut x|{
@@ -200,7 +200,11 @@ impl host{
         inventory = inventory.into_iter().filter(|x| !x.infected).collect::<Vec<host>>();    
         inventory = inventory.into_iter().filter_map(|mut x|{
             if cloneof.iter().any(|inf| host::dist(&inf,&x)){
+                let before = x.infected.clone();
                 x.infected=x.transfer();
+                if !before && x.infected{
+                    println!("{} {} {}",x.x,x.y,time);
+                }
                 // println!("{} vs {}",&inf.x,&x.x,&inf.y,&x.y);
                 Some(x)
             }else{
@@ -341,7 +345,7 @@ fn main(){
         let mut collect: Vec<host> = Vec::new();
         for _ in 0..4{
             chickens = host::shuffle_all(chickens);
-            chickens = host::transmit(chickens);
+            chickens = host::transmit(chickens,time.clone());
         } //Say chickens move/don't move every 15min - 4 times per hour
         chickens = host::deposit_all(chickens);
         [chickens,collect] = host::collect(chickens);
@@ -384,6 +388,7 @@ fn main(){
         if host::report(&chickens)[2]<5.0{break;}
     }
     wtr.flush().unwrap();
+    println!("{} {} {}",GRIDSIZE[0],GRIDSIZE[1],LENGTH);
     // print("{} hours elapsed",time);
 
     // let perc = host::report(&feast)[0]*100.0;
