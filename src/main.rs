@@ -4,6 +4,23 @@ use rand::distributions::{Distribution, Standard};
 use rand::{thread_rng, Rng};
 use statrs::distribution::{Normal, Poisson, StudentsT, Triangular, Weibull};
 
+extern crate serde;
+extern crate serde_json;
+use serde::Deserializer;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+// use std::error::Error;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Read;
+use std::io::Write;
+use std::time::{Duration, Instant};
+use std::{fs, io, process};
+use std::error::Error;
+
+use csv::Writer;
+
 
 pub mod limits{
     pub fn min(a:f64,b:f64)->f64{
@@ -52,27 +69,29 @@ pub struct host{
     age:f64
 }
 
+//Space
 const LISTOFPROBABILITIES:[f64;5] = [0.1,0.75,0.05,0.03,0.15]; //Probability of transfer of samonella per zone - starting from zone 0 onwards
 const GRIDSIZE:[f64;2] = [1000.0,1000.0];
 const MAX_MOVE:f64 = 25.0;
-
 const MEAN_MOVE:f64 = 5.0;
 const STD_MOVE:f64 = 10.0;
-
-const TRANSFER_DISTANCE: f64 = 1.0;//maximumm distance over which hosts can trasmit diseases to one another
-
-const AGE_OF_HOSTCOLLECTION: f64 = 45.0*24.0;  //For instance if you were collecting chickens every 60 days
+//Disease 
+const TRANSFER_DISTANCE: f64 = 1.0;//maximum distance over which hosts can trasmit diseases to one another
+//Collection
+const AGE_OF_HOSTCOLLECTION: f64 = 15.0*24.0;  //For instance if you were collecting chickens every 15 days
 const AGE_OF_DEPOSITCOLLECTION:f64 = 1.0*24.0; //If you were collecting their eggs every 3 days
-
+const FAECAL_CLEANUP_FREQUENCY:usize = 4; //How many times a day do you want faecal matter to be cleaned up?
+//Resolution
 const STEP:usize = 20;  //Number of chickens per unit distance
 const HOUR_STEP: f64 = 4.0; //Number of times chickens move per hour
+const LENGTH: usize = 30*24; //How long do you want the simulation to be?
 impl host{
-    fn transfer(&self)->bool{ //using prob1 as the probability of transferring AND contracting disease collectively (in other words, no separation of events between transferring and capturing disease)
+    fn transfer(&self)->bool{ //using prob1 as the probability of contracting disease  (in other words, no separation of events between transferring and capturing disease. If something is infected, it is always infected. Potentially.... the prospective new host will not get infected, but the INFECTED is always viably transferring)
         let mut rng = thread_rng();
         let roll = Uniform::new(0.0, 1.0);
         let rollnumber: f64 = rng.sample(roll);
         // println!("DISEASE   {}",rollnumber);
-        rollnumber < self.prob1 && self.infected
+        rollnumber < self.prob1
     }
     fn new(zone:usize, std:f64,loc_x:f64, loc_y:f64)->host{
         let prob:f64 = LISTOFPROBABILITIES[zone.clone()];
@@ -166,28 +185,30 @@ impl host{
         //     println!("{} {} vs {} {}",&host1.x,&host1.y,&host2.x,&host2.y);
         // }
         ////
-        t.powf(0.5)<=TRANSFER_DISTANCE
+        t.powf(0.5)<=TRANSFER_DISTANCE && host1.zone == host2.zone
     }
-    fn transmit(inventory:Vec<host>)->Vec<host>{//Current version logic: Once the diseased host passes the "test" in fn transfer, then ALL other hosts within distance contract
+    fn transmit(mut inventory:Vec<host>)->Vec<host>{//Current version logic: Once the diseased host passes the "test" in fn transfer, then ALL other hosts within distance contract
         //Locate all infected hosts
         let mut cloneof: Vec<host> = inventory.clone();
         cloneof = cloneof.into_iter().filter_map(|mut x|{
-            if x.transfer(){ //x.transfer is how we internalise the probabilistic nature (not definitive way) that a disease can or cannot spread from an infected individual
+            if x.infected{ //x.transfer is how we internalise the probabilistic nature (not definitive way) that a disease can or cannot spread from an infected individual
                 Some(x)
             }else{
                 None
             }
         }).collect();
-
-        inventory.into_iter().filter_map(|mut x|{
+        inventory = inventory.into_iter().filter(|x| !x.infected).collect::<Vec<host>>();    
+        inventory = inventory.into_iter().filter_map(|mut x|{
             if cloneof.iter().any(|inf| host::dist(&inf,&x)){
-                x.infected=true;
+                x.infected=x.transfer();
                 // println!("{} vs {}",&inf.x,&x.x,&inf.y,&x.y);
                 Some(x)
             }else{
                 Some(x)
             }
-        }).collect()
+        }).collect();
+        inventory.extend(cloneof);
+        inventory
     }
     fn cleanup(inventory:Vec<host>)->Vec<host>{
         inventory.into_iter().filter_map(|mut x|{
@@ -305,7 +326,18 @@ fn main(){
         }
     }
     chickens.push(host::new_inf(1,0.2,55.0,55.0)); // the infected
-    for time in (0..30*24){
+
+    //CSV FILE
+    let filestring: String = format!("./output.csv");
+    // Open the file in append mode for writing
+    let mut file = OpenOptions::new()
+    .write(true)
+    .create(true)
+    .append(true) // Open in append mode
+    .open(&filestring)
+    .unwrap();
+    let mut wtr = Writer::from_writer(file);
+    for time in 0..LENGTH{
         let mut collect: Vec<host> = Vec::new();
         for _ in 0..4{
             chickens = host::shuffle_all(chickens);
@@ -315,32 +347,52 @@ fn main(){
         [chickens,collect] = host::collect(chickens);
         //Collect the hosts and deposits as according
         feast.append(&mut collect);
+        //Farm
         let perc = host::report(&chickens)[0]*100.0;
         let total_hosts = host::report(&chickens)[2];
         let no = host::report(&chickens)[0]*total_hosts;
-        // println!("{}% of the chickens in the farm are infected, out of {} total - {} infected",perc,total_hosts,no);
         let perc2 = host::report(&chickens)[1]*100.0;
         let total_hosts2 = host::report(&chickens)[3];
-        let no2 = host::report(&chickens)[1]*total_hosts;            
-        println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);
-        if time % 6 ==0{
+        let no2 = host::report(&chickens)[1]*total_hosts;        
+        //Collection
+        let _perc = host::report(&feast)[0]*100.0;
+        let _total_hosts = host::report(&feast)[2];
+        let _no = host::report(&feast)[0]*total_hosts;
+        let _perc2 = host::report(&feast)[1]*100.0;
+        let _total_hosts2 = host::report(&feast)[3];
+        let _no2 = host::report(&feast)[1]*total_hosts;            
+        // println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);    
+        // println!("{} {} {} {} {} {} {} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2,_perc,_total_hosts,_no,_perc2,_total_hosts2,_no2);
+        wtr.write_record(&[
+            perc.to_string(),
+            total_hosts.to_string(),
+            no.to_string(),
+            perc2.to_string(),
+            total_hosts2.to_string(),
+            no2.to_string(),
+            _perc.to_string(),
+            _total_hosts.to_string(),
+            _no.to_string(),
+            _perc2.to_string(),
+            _total_hosts2.to_string(),
+            _no2.to_string(),
+        ])
+        .unwrap();
+        if time % (24/FAECAL_CLEANUP_FREQUENCY) ==0{
             chickens = host::cleanup(chickens);
         }
         if host::report(&chickens)[2]<5.0{break;}
     }
+    wtr.flush().unwrap();
     // print("{} hours elapsed",time);
 
-    let perc = host::report(&feast)[0]*100.0;
-    let total_hosts = host::report(&feast)[2];
-    let no = host::report(&feast)[0]*total_hosts;
-
-
-    // println!("{}% of the chickens in the collection are infected, out of {} total - {} infected",perc,total_hosts,no);
-
-    let perc2 = host::report(&feast)[1]*100.0;
-    let total_hosts2 = host::report(&feast)[3];
-    let no2 = host::report(&feast)[1]*total_hosts;            
-    println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);    
+    // let perc = host::report(&feast)[0]*100.0;
+    // let total_hosts = host::report(&feast)[2];
+    // let no = host::report(&feast)[0]*total_hosts;
+    // let perc2 = host::report(&feast)[1]*100.0;
+    // let total_hosts2 = host::report(&feast)[3];
+    // let no2 = host::report(&feast)[1]*total_hosts;            
+    // println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);    
     
 
     // println!("{} total number of collected hosts and deposits",feast.len());
