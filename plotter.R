@@ -51,14 +51,14 @@ heatmap_plot <- ggplot(data, aes(x, y)) +
 heatmap_interactive <- ggplotly(heatmap_plot)
 
 # Save as HTML using pandoc
-# htmlwidgets::saveWidget(heatmap_interactive, "heatmap_output.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(heatmap_interactive, "heatmap_output.html", selfcontained = TRUE)
 print("Heatmap generated successfully!")
 
 
 
 
 #Finding all files that contain this name are as follows
-df<-read.csv("output.csv",header = FALSE)
+data<-read.csv("output.csv",header = FALSE)
 
 library("ggplot2")
 library("plotly")
@@ -75,8 +75,8 @@ library(extrafont)
 library(pandoc)
 #library(pandoc)
 #Get dem custom fonts
-font_import()
-loadfonts(device = "win")
+# font_import()
+# loadfonts(device = "win")
 # actual_pars<-as.data.frame(actual_pars)
 
 
@@ -90,38 +90,139 @@ colnames(data) <- c(
 
 # Scatter plot for the first 2 sets of data
 # Define custom theme colors
-thematic_on(bg = "#FCE9D7", fg = "orange", accent = "purple")
+thematic_on(bg = "#FCE9D7", fg = "orange", accent = "purple",font = "Yu Gothic")
 
+time <- seq_len(nrow(data))
 # Scatter plot for the first 2 sets of data
-scatter_plot_1 <- ggplot(data, aes(x = HitPct1, y = HitPct2)) +
-  geom_point() +
-  labs(title = "Scatter Plot: First 2 Sets") +
-  theme_bw() +  # Applying the custom theme
-  theme(
-    legend.background = element_rect(
-      fill = "#FCE9D7",
-      colour = "black",
-      size = 1
-    )
-  )
+# scatter_plot_1 <- ggplot(data) +
+#   geom_point(aes(x = time, y = HitPct1), fill = "#007663") +geom_point(aes(x = time, y = HitPct2), fill = "#FF8A5F") +
+#   labs(title = "Scatter Plot: First 2 Sets") +
+#   theme_bw() +  # Applying the custom theme
+#   theme(
+#     legend.background = element_rect(
+#       fill = "#FCE9D7",
+#       colour = "black",
+#       size = 1
+#     )
+#   )
 
 
-# Scatter plot for the last 2 sets of data
-# Scatter plot for the last 2 sets of data
-scatter_plot_2 <- ggplot(data, aes(x = HitPct3, y = HitPct4)) +
-  geom_point() +
-  labs(title = "Scatter Plot: Last 2 Sets") +
-  theme_bw() +  # Applying the custom theme
-  theme(
-    legend.background = element_rect(
-      fill = "#FCE9D7",
-      colour = "black",
-      size = 1
-    )
-  )
 
-# Convert ggplot to ggplotly
-scatter_interactive_1 <- ggplotly(scatter_plot_1)
-scatter_interactive_2 <- ggplotly(scatter_plot_2)
-htmlwidgets::saveWidget(scatter_interactive_1, "scatter_plot_1.html", selfcontained = TRUE)
-htmlwidgets::saveWidget(scatter_interactive_2, "scatter_plot_2.html", selfcontained = TRUE)
+# fig_dots<-data%>%
+#   plot_ly(x = time,
+#           y = ~HitPct1,
+#           color ="Host",
+#           colors=c("#00927D","#00C9B1"),
+#           size = ~TotalSamples1,
+#           customdata = ~HitSamples1,
+#           hovertemplate="%{y} % of motile hosts <br> are infected  <br> ie %{customdata} out of %{marker.size} hosts",
+#           type="scatter",
+#           mode = "markers+lines",line = list(width=0.35)) 
+
+# fig_dots<-fig_dots %>%
+#   add_trace(
+#     x = ~time,
+#     y = ~HitPct2,
+#     color = "Deposits",
+#     colors = c("#F7C9B6", "#FF8371"),  # Reversed color order
+#     size = ~TotalSamples2,
+#     customdata = ~HitSamples2,
+#     hovertemplate = "%{y} % of motile hosts <br> are infected  <br> ie %{customdata} out of %{marker.size} hosts",
+#     line = list(width = 0.35)
+#   ) %>%
+#   layout(title = "% of marriages that end in divorce",
+#          plot_bgcolor = '#FFF8EE',
+#          xaxis = list(
+#           title = "Time (Hours)",
+#            zerolinecolor = '#ffff',
+#            zerolinewidth = 0.5,
+#            gridcolor = '#F4F2F0'),
+#          yaxis = list(
+#           title = "Percentage of Infected",
+#            zerolinecolor = '#ffff',
+#            zerolinewidth = 0.5,
+#            gridcolor = '#F4F2F0'))
+
+
+
+
+#Farm
+
+fig_dots<-data%>%plot_ly(type="scatter",
+          mode = "markers+lines",line = list(width=0.35))%>%
+  add_trace(x = time,
+          y = ~HitPct1,
+          color ="Host",
+          colors=c("#2A6074","#00C9B1"),
+          size = ~TotalSamples1,
+          customdata = ~paste(HitSamples1, "out of ", TotalSamples1," hosts"),
+          hovertemplate="%{y} % of motile hosts <br> are infected  <br> ie %{customdata}")
+
+
+fig_dots<-fig_dots %>%
+  add_trace(
+    x = ~time,
+    y = ~HitPct2,
+    color = "Deposits",
+    colors = c("#FFF184", "#FFDD80"),  # Reversed color order
+    size = ~TotalSamples2,
+    customdata = ~paste(HitSamples2, "out of ", TotalSamples2," deposits"),
+    hovertemplate = "%{y} % of sessile deposits <br> are infected  <br> ie %{customdata}",
+    line = list(width = 0.35)
+  ) %>%
+  layout(title = "Infection Trend within cultivation",
+         plot_bgcolor = '#FFF8EE',
+         xaxis = list(
+          title = "Time (Hours)",
+           zerolinecolor = '#ffff',
+           zerolinewidth = 0.5,
+           gridcolor = '#F4F2F0'),
+         yaxis = list(
+          title = "Percentage of Infected",
+           zerolinecolor = '#ffff',
+           zerolinewidth = 0.5,
+           gridcolor = '#F4F2F0'))
+
+htmlwidgets::saveWidget(fig_dots, "scatter_plot_1.html", selfcontained = TRUE)
+
+
+
+#Collection
+
+fig_dots<-data%>%plot_ly(type="scatter",
+          mode = "markers+lines",line = list(width=0.35))%>%
+  add_trace(x = time,
+          y = ~HitPct3,
+          color ="Host",
+          colors=c("#2A6074","#00C9B1"),
+          size = ~TotalSamples3,
+          customdata = ~paste(HitSamples3, "out of ", TotalSamples3," hosts"),
+          hovertemplate="%{y} % of motile hosts <br> are infected  <br> ie %{customdata}")
+
+
+fig_dots<-fig_dots %>%
+  add_trace(
+    x = ~time,
+    y = ~HitPct4,
+    color = "Deposits",
+    colors = c("#FFF184", "#FFDD80"),  # Reversed color order
+    size = ~TotalSamples4,
+    customdata = ~paste(HitSamples4, "out of ", TotalSamples4," deposits"),
+    hovertemplate = "%{y} % of sessile deposits <br> are infected  <br> ie %{customdata}",
+    line = list(width = 0.35)
+  ) %>%
+  layout(title = "Infection Trend within collection",
+         plot_bgcolor = '#FFF8EE',
+         xaxis = list(
+          title = "Time (Hours)",
+           zerolinecolor = '#ffff',
+           zerolinewidth = 0.5,
+           gridcolor = '#F4F2F0'),
+         yaxis = list(
+          title = "Percentage of Infected",
+           zerolinecolor = '#ffff',
+           zerolinewidth = 0.5,
+           gridcolor = '#F4F2F0'))
+
+
+htmlwidgets::saveWidget(fig_dots, "scatter_plot_2.html", selfcontained = TRUE)
