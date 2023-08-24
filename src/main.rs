@@ -61,7 +61,7 @@ const STD_MOVE:f64 = 10.0;
 
 const TRANSFER_DISTANCE: f64 = 1.0;//maximumm distance over which hosts can trasmit diseases to one another
 
-const AGE_OF_HOSTCOLLECTION: f64 = 45.0*24.0;  //For instance if you were collecting chickens every 60 days
+const AGE_OF_HOSTCOLLECTION: f64 = 30.0*24.0;  //For instance if you were collecting chickens every 60 days
 const AGE_OF_DEPOSITCOLLECTION:f64 = 1.0*24.0; //If you were collecting their eggs every 3 days
 
 const STEP:usize = 20;  //Number of chickens per unit distance
@@ -128,23 +128,24 @@ impl host{
         if self.motile==0{
             //Whether the movement is negative or positive
             let mut rng = thread_rng();
-            let roll = Uniform::new(0.0, 1.0);
+            let roll = Uniform::new(0.0, 2.4);
             let rollnumber: f64 = rng.sample(roll);
             let mult:f64 = match rollnumber{
-                0.5.. => -1.0,
-                _ => 1.0
-            };
-            //Perhaps they are just standing still - set it to 33% chance that chicken moves
-            let mut rng = thread_rng();
-            let roll = Uniform::new(0.0, 1.0);
-            let rollnumber: f64 = rng.sample(roll);
-            let mult2:f64 = match rollnumber{
-                0.3.. => 1.0,
+                0.0..=0.4 => -1.0,
+                0.4..=0.8 => 1.0,
                 _ => 0.0
-            };            
+            };
+            // //Perhaps they are just standing still - set it to 33% chance that chicken moves
+            // let mut rng = thread_rng();
+            // let roll = Uniform::new(0.0, 1.0);
+            // let rollnumber: f64 = rng.sample(roll);
+            // let mult2:f64 = match rollnumber{
+            //     0.3.. => 1.0,
+            //     _ => 0.0
+            // };            
             //use truncated normal distribution (which has been forced to be normal) in order to change the values of x and y accordingly of the host - ie movement
-            let new_x: f64 = limits::min(limits::max(0.0,self.x+mult2*mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[0]);
-            let new_y:f64 = limits::min(limits::max(0.0,self.y+mult2*mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[1]);
+            let new_x: f64 = limits::min(limits::max(0.0,self.x+mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[0]);
+            let new_y:f64 = limits::min(limits::max(0.0,self.y+mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[1]);
             host{infected:self.infected,motile:self.motile,zone:self.zone,prob1:self.prob1,prob2:self.prob2,x:new_x,y:new_y,age:self.age+1.0}}
         else{
             //deposits by hosts do not move obviously, but they DO age, which affects collection
