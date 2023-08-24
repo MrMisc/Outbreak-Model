@@ -71,7 +71,7 @@ pub struct host{
 
 //Space
 const LISTOFPROBABILITIES:[f64;5] = [0.1,0.75,0.05,0.03,0.15]; //Probability of transfer of samonella per zone - starting from zone 0 onwards
-const GRIDSIZE:[f64;2] = [1000.0,1000.0];
+const GRIDSIZE:[f64;2] = [10000.0,10000.0];
 const MAX_MOVE:f64 = 25.0;
 const MEAN_MOVE:f64 = 5.0;
 const STD_MOVE:f64 = 10.0;
@@ -333,6 +333,9 @@ fn main(){
 
     //CSV FILE
     let filestring: String = format!("./output.csv");
+    if fs::metadata(&filestring).is_ok() {
+        fs::remove_file(&filestring).unwrap();
+    }
     // Open the file in append mode for writing
     let mut file = OpenOptions::new()
     .write(true)
@@ -343,7 +346,7 @@ fn main(){
     let mut wtr = Writer::from_writer(file);
     for time in 0..LENGTH{
         let mut collect: Vec<host> = Vec::new();
-        for _ in 0..4{
+        for _ in 0..HOUR_STEP as usize{
             chickens = host::shuffle_all(chickens);
             chickens = host::transmit(chickens,time.clone());
         } //Say chickens move/don't move every 15min - 4 times per hour
@@ -385,20 +388,8 @@ fn main(){
         if time % (24/FAECAL_CLEANUP_FREQUENCY) ==0{
             chickens = host::cleanup(chickens);
         }
-        if host::report(&chickens)[2]<5.0{break;}
+        // if host::report(&chickens)[2]<5.0{break;}
     }
     wtr.flush().unwrap();
     println!("{} {} {}",GRIDSIZE[0],GRIDSIZE[1],LENGTH);
-    // print("{} hours elapsed",time);
-
-    // let perc = host::report(&feast)[0]*100.0;
-    // let total_hosts = host::report(&feast)[2];
-    // let no = host::report(&feast)[0]*total_hosts;
-    // let perc2 = host::report(&feast)[1]*100.0;
-    // let total_hosts2 = host::report(&feast)[3];
-    // let no2 = host::report(&feast)[1]*total_hosts;            
-    // println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);    
-    
-
-    // println!("{} total number of collected hosts and deposits",feast.len());
 }
