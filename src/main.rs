@@ -61,11 +61,11 @@ const STD_MOVE:f64 = 10.0;
 
 const TRANSFER_DISTANCE: f64 = 1.0;//maximumm distance over which hosts can trasmit diseases to one another
 
-const AGE_OF_HOSTCOLLECTION: f64 = 30.0*24.0;  //For instance if you were collecting chickens every 60 days
+const AGE_OF_HOSTCOLLECTION: f64 = 45.0*24.0;  //For instance if you were collecting chickens every 60 days
 const AGE_OF_DEPOSITCOLLECTION:f64 = 1.0*24.0; //If you were collecting their eggs every 3 days
 
 const STEP:usize = 20;  //Number of chickens per unit distance
-
+const HOUR_STEP: f64 = 4.0; //Number of times chickens move per hour
 impl host{
     fn transfer(&self)->bool{ //using prob1 as the probability of transferring AND contracting disease collectively (in other words, no separation of events between transferring and capturing disease)
         let mut rng = thread_rng();
@@ -146,10 +146,10 @@ impl host{
             //use truncated normal distribution (which has been forced to be normal) in order to change the values of x and y accordingly of the host - ie movement
             let new_x: f64 = limits::min(limits::max(0.0,self.x+mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[0]);
             let new_y:f64 = limits::min(limits::max(0.0,self.y+mult*normal(MEAN_MOVE,STD_MOVE,MAX_MOVE)),GRIDSIZE[1]);
-            host{infected:self.infected,motile:self.motile,zone:self.zone,prob1:self.prob1,prob2:self.prob2,x:new_x,y:new_y,age:self.age+1.0}}
+            host{infected:self.infected,motile:self.motile,zone:self.zone,prob1:self.prob1,prob2:self.prob2,x:new_x,y:new_y,age:self.age+1.0/HOUR_STEP}}
         else{
             //deposits by hosts do not move obviously, but they DO age, which affects collection
-            self.age += 1.0;
+            self.age += 1.0/HOUR_STEP;
             self
         }
     }
@@ -184,6 +184,15 @@ impl host{
                 x.infected=true;
                 // println!("{} vs {}",&inf.x,&x.x,&inf.y,&x.y);
                 Some(x)
+            }else{
+                Some(x)
+            }
+        }).collect()
+    }
+    fn cleanup(inventory:Vec<host>)->Vec<host>{
+        inventory.into_iter().filter_map(|mut x|{
+            if x.motile==2{
+                None
             }else{
                 Some(x)
             }
@@ -314,6 +323,10 @@ fn main(){
         let total_hosts2 = host::report(&chickens)[3];
         let no2 = host::report(&chickens)[1]*total_hosts;            
         println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);
+        if time % 6 ==0{
+            chickens = host::cleanup(chickens);
+        }
+        if host::report(&chickens)[2]<5.0{break;}
     }
     // print("{} hours elapsed",time);
 
