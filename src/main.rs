@@ -71,21 +71,27 @@ pub struct host{
 
 //Space
 const LISTOFPROBABILITIES:[f64;5] = [0.1,0.75,0.05,0.03,0.15]; //Probability of transfer of samonella per zone - starting from zone 0 onwards
-const GRIDSIZE:[f64;2] = [10000.0,10000.0];
+const GRIDSIZE:[f64;2] = [3000.0,3000.0];
 const MAX_MOVE:f64 = 25.0;
 const MEAN_MOVE:f64 = 5.0;
 const STD_MOVE:f64 = 10.0;
 //Disease 
 const TRANSFER_DISTANCE: f64 = 1.0;//maximum distance over which hosts can trasmit diseases to one another
 //Collection
-const AGE_OF_HOSTCOLLECTION: f64 = 15.0*24.0;  //For instance if you were collecting chickens every 15 days
+const AGE_OF_HOSTCOLLECTION: f64 = 30.0*24.0;  //For instance if you were collecting chickens every 15 days
 const AGE_OF_DEPOSITCOLLECTION:f64 = 1.0*24.0; //If you were collecting their eggs every 3 days
 const FAECAL_CLEANUP_FREQUENCY:usize = 4; //How many times a day do you want faecal matter to be cleaned up?
 //Resolution
 const STEP:usize = 20;  //Number of chickens per unit distance
 const HOUR_STEP: f64 = 4.0; //Number of times chickens move per hour
-const LENGTH: usize = 30*24; //How long do you want the simulation to be?
+const LENGTH: usize = 45*24; //How long do you want the simulation to be?
 impl host{
+    fn transport(&mut self){
+        //Where in the new zone are they transported? Presumably one door
+        self.x = 0.0;
+        self.y = 0.0;
+        self.zone=limits::min((self.zone+1) as f64,LISTOFPROBABILITIES.len() as f64) as usize;
+    }
     fn transfer(&self)->bool{ //using prob1 as the probability of contracting disease  (in other words, no separation of events between transferring and capturing disease. If something is infected, it is always infected. Potentially.... the prospective new host will not get infected, but the INFECTED is always viably transferring)
         let mut rng = thread_rng();
         let roll = Uniform::new(0.0, 1.0);
@@ -323,13 +329,15 @@ fn main(){
     let mut chickens: Vec<host> = Vec::new();
     let mut feast: Vec<host> =  Vec::new();
     let step = STEP;
+    //GENERATE CLEAN HOSTS
     for i in (0..GRIDSIZE[0] as u64).step_by(step){
         // println!("{}",i as f64)
         for j in (0..GRIDSIZE[1] as u64).step_by(step){
             chickens.push(host::new(1,0.2,i as f64,j as f64));
         }
     }
-    chickens.push(host::new_inf(1,0.2,55.0,55.0)); // the infected
+    //GENERATE INFECTED HOST
+    chickens.push(host::new_inf(1,0.2,GRIDSIZE[0]/2.0,GRIDSIZE[1]/2.0)); // the infected
 
     //CSV FILE
     let filestring: String = format!("./output.csv");
@@ -360,14 +368,14 @@ fn main(){
         let no = host::report(&chickens)[0]*total_hosts;
         let perc2 = host::report(&chickens)[1]*100.0;
         let total_hosts2 = host::report(&chickens)[3];
-        let no2 = host::report(&chickens)[1]*total_hosts;        
+        let no2 = host::report(&chickens)[1]*total_hosts2;        
         //Collection
         let _perc = host::report(&feast)[0]*100.0;
         let _total_hosts = host::report(&feast)[2];
-        let _no = host::report(&feast)[0]*total_hosts;
+        let _no = host::report(&feast)[0]*_total_hosts;
         let _perc2 = host::report(&feast)[1]*100.0;
         let _total_hosts2 = host::report(&feast)[3];
-        let _no2 = host::report(&feast)[1]*total_hosts;            
+        let _no2 = host::report(&feast)[1]*_total_hosts2;            
         // println!("{} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2);    
         // println!("{} {} {} {} {} {} {} {} {} {} {} {}",perc,total_hosts,no,perc2,total_hosts2,no2,_perc,_total_hosts,_no,_perc2,_total_hosts2,_no2);
         wtr.write_record(&[
@@ -392,4 +400,35 @@ fn main(){
     }
     wtr.flush().unwrap();
     println!("{} {} {}",GRIDSIZE[0],GRIDSIZE[1],LENGTH);
+
+    
+    // Open a file for writing
+    let mut file = File::create("parameters.txt").expect("Unable to create file");
+
+    // Write constants to the file
+    // Space
+    writeln!(file, "## Space").expect("Failed to write to file");
+    writeln!(file, "- LISTOFPROBABILITIES: {:?} (Probability of transfer of salmonella per zone)", LISTOFPROBABILITIES).expect("Failed to write to file");
+    writeln!(file, "- GRIDSIZE: {:?} (Size of the grid)", GRIDSIZE).expect("Failed to write to file");
+    writeln!(file, "- MAX_MOVE: {} (Maximum move value)", MAX_MOVE).expect("Failed to write to file");
+    writeln!(file, "- MEAN_MOVE: {} (Mean move value)", MEAN_MOVE).expect("Failed to write to file");
+    writeln!(file, "- STD_MOVE: {} (Standard deviation of move value)", STD_MOVE).expect("Failed to write to file");
+
+    // Disease
+    writeln!(file, "\n## Disease").expect("Failed to write to file");
+    writeln!(file, "- TRANSFER_DISTANCE: {} (Maximum distance for disease transmission)", TRANSFER_DISTANCE).expect("Failed to write to file");
+
+    // Collection
+    writeln!(file, "\n## Collection").expect("Failed to write to file");
+    writeln!(file, "- AGE_OF_HOSTCOLLECTION: {} days", AGE_OF_HOSTCOLLECTION/24.0).expect("Failed to write to file");
+    writeln!(file, "- AGE_OF_DEPOSITCOLLECTION: {} days", AGE_OF_DEPOSITCOLLECTION/24.0).expect("Failed to write to file");
+    writeln!(file, "- FAECAL_CLEANUP_FREQUENCY: {} times per day", 24/FAECAL_CLEANUP_FREQUENCY).expect("Failed to write to file");
+
+    // Resolution
+    writeln!(file, "\n## Resolution").expect("Failed to write to file");
+    writeln!(file, "- STEP: {} (Chickens per unit distance)", STEP).expect("Failed to write to file");
+    writeln!(file, "- HOUR_STEP: {} (Chickens move per hour)", HOUR_STEP).expect("Failed to write to file");
+    writeln!(file, "- LENGTH: {} (Simulation duration in hours)", LENGTH).expect("Failed to write to file");
+
+
 }
