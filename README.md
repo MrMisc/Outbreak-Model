@@ -103,5 +103,40 @@ The integration of the Rust simulation code with R data visualization enables a 
 
 3. **Opening Interactive Plots**:
    - After running the R script, you can open the generated interactive HTML plots by double-clicking the HTML files ("heatmap_output.html," "Heatmap_2dHistogram.html," etc.).
+   - 
+   ## Exploring Generated Visualizations
 
+The R script generates a variety of visualizations based on the infection data obtained from the Rust simulation. Each visualization provides unique insights into infection dynamics and patterns. Below are descriptions and explanations for each of the generated plots:
+
+### Heatmap of Coordinates
+
+The "heatmap_output.html" file presents a heatmap that visualizes the density of infection occurrences across different coordinates. The color intensity represents the density of infections at specific points, allowing you to identify regions with higher infection rates.
+
+### 2D Histogram of Occurrences
+
+The "Heatmap_2dHistogram.html" file displays a 2D histogram that captures the joint distribution of infections along the X and Y axes. The color scale indicates the frequency of infections in specific regions of the plot. This visualization helps in understanding the spatial relationship between infections.
+
+### Hexbin Plot Example
+
+The "hexbin_plot.html" file showcases a hexbin plot, which is a variation of a scatter plot that aggregates points into hexagonal bins. This plot provides a clear representation of infection density, with darker areas indicating higher infection occurrences.
+
+### Surface Plot Example
+
+The "surface_plot.html" file features a 3D surface plot that illustrates the change in infection occurrence over time and spatial coordinates. The color gradient indicates the variation in infection intensity. This plot is particularly useful for observing temporal trends in infection dynamics.
+
+### Infection Trend within Cultivation
+
+The "scatter_plot_1.html" file presents a scatter plot that showcases the infection trend within the cultivation process. It provides insights into the infection percentages of both motile hosts and sessile deposits over time. Each line represents a different category, allowing for easy comparison.
+
+### Infection Trend within Collection
+
+The "scatter_plot_2.html" file depicts the infection trend within the collection process. Similar to the previous scatter plot, it displays infection percentages of motile hosts and sessile deposits. This plot aids in understanding infection dynamics during the collection phase.
+
+### Infection Trend across Population
+
+The "scatter_plot_final.html" file offers an overview of infection trends across the entire population. It combines data from both cultivation and collection phases, providing insights into the overall infection percentages of motile hosts and sessile deposits.
+
+These visualizations collectively offer a comprehensive view of infection dynamics, enabling you to identify patterns, trends, and correlations within the simulated data.
+
+---
 By integrating Rust simulation with R data visualization, you can seamlessly transition from data generation to in-depth analysis and visualization, resulting in a comprehensive understanding of infection dynamics.
