@@ -2,9 +2,6 @@
  A model designed to simulate walking hosts, with the option to set some as infected, some as not. Various logical segments to be designed soon
 
 
-Certainly! I'll provide a detailed explanation of the code using text and a simplified textual representation (Mermaid-like diagram) in Markdown format.
-
-
 ## Rust Disease Spread Simulation
 
 This Rust code simulates the spread of a disease within a population of hosts (chickens).
