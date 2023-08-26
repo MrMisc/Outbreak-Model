@@ -1,6 +1,5 @@
 # Outbreak Model
- A model designed to simulate walking hosts, with the option to set some as infected, some as not. Various logical segments to be designed soon
-Absolutely, I understand. Here's the expanded introduction in Markdown format without the "Conclusion" section:
+ A model designed to simulate walking hosts, with the option to set some as infected, some as not.
 
 ## Outbreak Model: Simulating Infectious Disease Transmission in Enclosed Facilities
 
