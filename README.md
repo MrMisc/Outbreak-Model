@@ -102,6 +102,51 @@ The `main` function is the entry point of the simulation.
 2. Adjust constants to customize simulation parameters.
 3. Run the Rust code.
 
+### Constants Explanation
+
+In the provided Rust code, the simulation is set up using various constants (prefixed with "const" and written in uppercase) that define various parameters of the simulation. These constants determine the behavior and characteristics of the simulated environment, hosts, disease transmission, collection, and other aspects of the simulation. Here's an explanation of what each constant represents and some examples of values to choose for them:
+
+1. `LISTOFPROBABILITIES`:
+   - This constant represents the probability of transfer of salmonella per zone. It is an array that holds the probabilities for each zone in the simulation.
+   - Example: `[0.1, 0.75, 0.05, 0.03, 0.15]` represents a set of probabilities for five different zones, where zone 1 has a 10% probability of transfer, zone 2 has a 75% probability, and so on.
+
+2. `GRIDSIZE`:
+   - Represents the dimensions of the grid that hosts are placed on.
+   - Example: `[3000.0, 3000.0]` defines a 3000x3000 unit grid.
+
+3. `MAX_MOVE`, `MEAN_MOVE`, `STD_MOVE`:
+   - Constants related to the movement of hosts. They define the maximum possible move distance, the mean move distance, and the standard deviation of the move distance, respectively.
+   - Example: `MAX_MOVE = 25.0`, `MEAN_MOVE = 5.0`, `STD_MOVE = 10.0` could represent that hosts can move up to 25 units, with an average move of 5 units and a deviation of 10 units.
+
+4. `TRANSFER_DISTANCE`:
+   - Represents the maximum distance over which hosts can transmit diseases to one another.
+   - Example: `TRANSFER_DISTANCE = 1.0` indicates that disease transmission can occur within a distance of 1 unit.
+
+5. `AGE_OF_HOSTCOLLECTION`, `AGE_OF_DEPOSITCOLLECTION`:
+   - Constants that define the age at which hosts and deposits are eligible for collection.
+   - Example: `AGE_OF_HOSTCOLLECTION = 30.0 * 24.0` represents a collection age of 30 days for hosts, and `AGE_OF_DEPOSITCOLLECTION = 1.0 * 24.0` represents a collection age of 1 day for deposits.
+
+6. `FAECAL_CLEANUP_FREQUENCY`:
+   - Represents how many times a day faecal matter cleanup is performed.
+   - Example: `FAECAL_CLEANUP_FREQUENCY = 4` means that faecal matter cleanup is performed four times a day.
+
+7. `STEP`:
+   - Represents the number of chickens per unit distance when generating chickens.
+   - Example: `STEP = 20` indicates that chickens are generated in a grid with 20 chickens per unit distance.
+
+8. `HOUR_STEP`:
+   - Represents the number of times chickens move per hour.
+   - Example: `HOUR_STEP = 4.0` means that chickens move four times within an hour.
+
+9. `LENGTH`:
+   - Represents the duration of the simulation in hours.
+   - Example: `LENGTH = 45 * 24` corresponds to a simulation duration of 45 days.
+
+These constants play a crucial role in defining the simulation's behavior and characteristics. Depending on the nature of the simulation and the specific scenario you're modeling, you would choose appropriate values for these constants to achieve the desired outcomes and behaviors within the simulated environment.
+
+
+
+
 ### Interpretation
 
 Analyze the `output.csv` file to understand disease progression, infection rates, and collection rates.
