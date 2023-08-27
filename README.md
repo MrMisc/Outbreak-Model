@@ -107,7 +107,7 @@ The `main` function is the entry point of the simulation.
 In the provided Rust code, the simulation is set up using various constants (prefixed with "const" and written in uppercase) that define various parameters of the simulation. These constants determine the behavior and characteristics of the simulated environment, hosts, disease transmission, collection, and other aspects of the simulation. Here's an explanation of what each constant represents and some examples of values to choose for them:
 
 1. `LISTOFPROBABILITIES`:
-   - This constant represents the probability of transfer of salmonella per zone. It is an array that holds the probabilities for each zone in the simulation.
+   - This constant represents the probability of transfer of disease per zone. It is an array that holds the probabilities for each zone in the simulation.
    - Example: `[0.1, 0.75, 0.05, 0.03, 0.15]` represents a set of probabilities for five different zones, where zone 1 has a 10% probability of transfer, zone 2 has a 75% probability, and so on.
 
 2. `GRIDSIZE`:
